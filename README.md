@@ -141,11 +141,10 @@ zhisaotong-Agent/
 | `pypdf` / `pypdf2` | PDF 文档加载 |
 | `pyyaml` | YAML 配置文件解析 |
 
-### 安装依赖
+### 一键部署（推荐）
 
 ```bash
-pip install streamlit langchain langchain-core langchain-community langgraph \
-            langchain-chroma chromadb dashscope pypdf pyyaml
+python -m pip install -r requirements.txt
 ```
 
 
@@ -217,8 +216,7 @@ cd zhisaotong-Agent
 ### 2. 安装依赖
 
 ```bash
-pip install streamlit langchain langchain-core langchain-community langgraph \
-            langchain-chroma chromadb dashscope pypdf pyyaml
+python -m pip install -r requirements.txt
 ```
 
 ### 3. 配置 API Key
