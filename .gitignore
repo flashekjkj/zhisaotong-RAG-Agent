@@ -1,0 +1,39 @@
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+
+# 模型文件 / 权重 / 缓存
+BAAI/
+*.bin
+*.safetensors
+*.pth
+*.h5
+*.onnx
+*.model
+*.vector
+rank_bm25/
+jieba_cache/
+
+# 配置文件 / 密钥（绝对不能上传！）
+utils/*.yml
+utils/*.yaml
+*.env
+*.secret
+config/
+
+# 日志
+logs/
+*.log
+
+# 系统文件
+.DS_Store
+.idea/
+.vscode/
+*.swp

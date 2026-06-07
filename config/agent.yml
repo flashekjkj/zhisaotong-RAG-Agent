@@ -1,4 +1,4 @@
 external_data_path: data/external/records.csv
-gaodekey: 你的高德key!
+gaodekey: ec905ad49c67f852576fca9f1649e498
 gaode_base_url: https://restapi.amap.com
 gaode_timeout: 5

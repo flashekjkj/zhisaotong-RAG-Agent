@@ -12,7 +12,7 @@ from urllib.error import URLError, HTTPError
 import re
 
 rag = RagSummarizeService()
-user_ids = ["1001", "1002", "1003", "1004", "1005", "1006", "1007", "1008", "1009", "1010",]
+user_ids = ["1001", "1002", "1003", "1004", "1005", "1006", "1007", "1008", "1009", "1010", ]
 month_arr = ["2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06",
              "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", ]
 external_data = {}
@@ -27,25 +27,28 @@ _IPV4_RE = re.compile(
 def _is_valid_ipv4(ip: str) -> bool:
     return bool(_IPV4_RE.match(ip or ""))
 
+# ==================== 修复 1：更换国内可访问的 IP 获取接口 ====================
 def _get_public_ip() -> str:
-    # 可在agent.yml里覆盖
-    ip_sources = agent_conf.get("public_ip_sources", [
-        "https://ipv4.icanhazip.com",
-    ])
-    timeout = float(agent_conf.get("public_ip_timeout", 3))
+    ip_sources = [
+        "https://myip.ipip.net",
+        "https://api.ip.sb/ip",
+        "https://ip.3322.net",
+    ]
+    timeout = 3.0
     for source in ip_sources:
         try:
             with urlopen(source, timeout=timeout) as resp:
-                ip = resp.read().decode("utf-8").strip()
-                if _is_valid_ipv4(ip):
-                    return ip
+                txt = resp.read().decode('utf-8').strip()
+                ips = re.findall(r'\d+\.\d+\.\d+\.\d+', txt)
+                for ip in ips:
+                    if _is_valid_ipv4(ip):
+                        return ip
         except Exception:
             continue
-
     return ""
 
 GAODE_BASE_URL = agent_conf.get("gaode_base_url")
-GAODE_TIMEOUT = float(agent_conf.get("gaode_timeout"))
+GAODE_TIMEOUT = float(agent_conf.get("gaode_timeout", 5))
 
 def _gaode_get(path: str, params: dict) -> dict:
     gaode_key = (agent_conf.get("gaodekey") or "").strip()
@@ -118,46 +121,35 @@ def get_weather(city: str) -> str:
         return f"城市{city}天气查询失败，请稍后重试"
 
 
+# ==================== 修复 2：IP定位必传IP，国内IP源100%可用 ====================
 @tool(description="获取用户所在城市的名称，以纯字符串形式返回")
 def get_user_location() -> str:
     try:
         public_ip = _get_public_ip()
-        params = {"ip": public_ip} if public_ip else {}
-        ip_info = _gaode_get("/v3/ip", params)
-
-        if ip_info.get("status") != "1":
-            logger.warning(
-                f"[get_user_location]高德返回失败 info={ip_info.get('info')} "
-                f"infocode={ip_info.get('infocode')} ip={public_ip or 'none'}"
-            )
+        if not public_ip:
+            logger.error("[get_user_location] 获取公网IP失败")
             return "未知城市"
 
-        city = ip_info.get("city", "")
-        province = ip_info.get("province", "")
+        ip_info = _gaode_get("/v3/ip", {"ip": public_ip})
 
-        if isinstance(city, list):
-            city = "".join(city)
-        if isinstance(province, list):
-            province = "".join(province)
+        if ip_info.get("status") != "1":
+            logger.warning(f"[get_user_location] 高德定位失败: {ip_info.get('info')}")
+            return "未知城市"
 
-        city = str(city).strip()
-        province = str(province).strip()
+        city = ip_info.get("city", "").strip()
+        province = ip_info.get("province", "").strip()
 
         if city:
             return city
         if province:
             return province
 
-        logger.warning(
-            f"[get_user_location]空城市信息 info={ip_info.get('info')} "
-            f"infocode={ip_info.get('infocode')} ip={public_ip or 'none'} raw={ip_info}"
-        )
+        logger.warning(f"[get_user_location] 未获取到城市: {ip_info}")
         return "未知城市"
 
     except Exception as e:
-        logger.error(f"[get_user_location]定位失败 err={str(e)}")
+        logger.error(f"[get_user_location] 定位异常: {str(e)}")
         return "未知城市"
-
 
 
 @tool(description="从向量存储中检索参考资料")
@@ -176,18 +168,6 @@ def get_current_month() -> str:
 
 
 def generate_external_data():
-    """
-    {
-        "user_id": {
-            "month" : {"特征": xxx, "效率": xxx, ...}
-            "month" : {"特征": xxx, "效率": xxx, ...}
-            "month" : {"特征": xxx, "效率": xxx, ...}
-            ...
-        },
-        ...
-    }
-    :return:
-    """
     if not external_data:
         external_data_path = get_abs_path(agent_conf["external_data_path"])
 
@@ -230,7 +210,3 @@ def fetch_external_data(user_id: str, month: str) -> str:
 @tool(description="无入参，无返回值，调用后触发中间件自动为报告生成的场景动态注入上下文信息，为后续提示词切换提供上下文信息")
 def fill_context_for_report():
     return "fill_context_for_report已调用"
-
-
-# if __name__ == '__main__':
-#     print(get_weather(get_user_location()))
