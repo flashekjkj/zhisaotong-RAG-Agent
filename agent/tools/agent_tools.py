@@ -210,3 +210,74 @@ def fetch_external_data(user_id: str, month: str) -> str:
 @tool(description="无入参，无返回值，调用后触发中间件自动为报告生成的场景动态注入上下文信息，为后续提示词切换提供上下文信息")
 def fill_context_for_report():
     return "fill_context_for_report已调用"
+
+# ===================== 多模态图片检测工具（集成你的test.py代码） =====================
+import os
+import requests
+import base64
+from PIL import Image
+from langchain_core.tools import tool
+
+# 配置项（和你的test.py完全一致）
+ENV_API_KEY_NAME = "DASHSCOPE_API_KEY"
+MODEL_NAME = "qwen-vl-plus"
+
+def _get_api_key() -> str:
+    api_key = os.getenv(ENV_API_KEY_NAME)
+    if not api_key:
+        raise ValueError(f"环境变量 {ENV_API_KEY_NAME} 未配置！")
+    return api_key
+
+def _compress_image(image_path: str, max_size=(1280, 1280), quality=85) -> str:
+    img = Image.open(image_path)
+    img.thumbnail(max_size)
+    compressed_path = "compressed_temp.jpg"
+    if img.mode in ("RGBA", "P"):
+        img = img.convert("RGB")
+    img.save(compressed_path, "JPEG", quality=quality, optimize=True)
+    return compressed_path
+
+def _image_to_base64(image_path: str) -> str:
+    compressed_path = _compress_image(image_path)
+    with open(compressed_path, "rb") as f:
+        return base64.b64encode(f.read()).decode("utf-8")
+
+# 封装为Agent工具！核心
+@tool(description="分析扫地机器人的故障图片，识别图片中的故障问题")
+def detect_robot_fault(image_path: str) -> str:
+    """
+    传入图片路径，识别扫地机故障
+    """
+    url = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
+    headers = {
+        "Authorization": f"Bearer {_get_api_key()}",
+        "Content-Type": "application/json"
+    }
+
+    img_base64 = _image_to_base64(image_path)
+    prompt = "你是专业的扫地机器人维修工程师，请分析图片中机器人的故障，简单回答（只回答机器人的故障即可）"
+
+    data = {
+        "model": MODEL_NAME,
+        "input": {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image", "image": f"data:image/jpeg;base64,{img_base64}"}
+                    ]
+                }
+            ]
+        }
+    }
+
+    try:
+        res = requests.post(url, headers=headers, json=data, timeout=30)
+        result = res.json()
+        if result.get("output") and result["output"]["choices"]:
+            return result["output"]["choices"][0]["message"]["content"][0]["text"]
+        else:
+            return f"识别失败：{result}"
+    except Exception as e:
+        return f"图片检测失败：{str(e)}"
