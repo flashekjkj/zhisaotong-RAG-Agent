@@ -2,8 +2,10 @@
 
 > 基于 LangChain ReAct Agent + RAG + Streamlit 的扫地机器人智能客服系统
 
----
+## （本项目基于https://github.com/bamboo-moon/zhisaotong-Agent项目修改，仅作学习用）
+
 # 使用必看
+
 请务必安装好相关配置环境，其中config/agent.yml文件中的gaodekey需要改为实际申请的高德key(也可以根据个人需要更改为更加隐式的办法)
 
 ## 📖 项目简介
@@ -21,17 +23,17 @@
 
 ## ✨ 核心特性
 
-| 特性 | 说明 |
-|------|------|
-| **LLM** | 阿里云通义千问 `qwen3-max`（通过 `ChatTongyi`） |
-| **Embedding** | 阿里云 DashScope `text-embedding-v4` |
-| **向量数据库** | Chroma（本地持久化） |
-| **Agent 框架** | LangChain ReAct Agent + LangGraph |
-| **前端** | Streamlit Web 界面，支持对话历史 |
-| **外部服务** | 高德地图 REST API（天气、IP 定位） |
-| **动态提示词** | 中间件根据上下文信号量自动切换 System Prompt |
-| **去重机制** | MD5 哈希追踪已处理文档，避免重复入库 |
-| **日志** | 按天分文件，同时输出到控制台与文件 |
+| 特性           | 说明                                            |
+| -------------- | ----------------------------------------------- |
+| **LLM**        | 阿里云通义千问 `qwen3-max`（通过 `ChatTongyi`） |
+| **Embedding**  | 阿里云 DashScope `text-embedding-v4`            |
+| **向量数据库** | Chroma（本地持久化）                            |
+| **Agent 框架** | LangChain ReAct Agent + LangGraph               |
+| **前端**       | Streamlit Web 界面，支持对话历史                |
+| **外部服务**   | 高德地图 REST API（天气、IP 定位）              |
+| **动态提示词** | 中间件根据上下文信号量自动切换 System Prompt    |
+| **去重机制**   | MD5 哈希追踪已处理文档，避免重复入库            |
+| **日志**       | 按天分文件，同时输出到控制台与文件              |
 
 ---
 
@@ -128,25 +130,24 @@ zhisaotong-Agent/
 
 ### 主要依赖包
 
-| 包名 | 用途 |
-|------|------|
-| `streamlit` | 前端 Web 框架 |
-| `langchain` | Agent / Chain / Tool 框架 |
-| `langchain-core` | LangChain 核心抽象 |
-| `langchain-community` | 通义千问、DashScope Embedding 等集成 |
-| `langgraph` | 基于图的 Agent 执行引擎（含 `Runtime`） |
-| `langchain-chroma` | LangChain 与 Chroma 向量库集成 |
-| `chromadb` | Chroma 向量数据库 |
-| `dashscope` | 阿里云 DashScope SDK（Embedding / LLM） |
-| `pypdf` / `pypdf2` | PDF 文档加载 |
-| `pyyaml` | YAML 配置文件解析 |
+| 包名                  | 用途                                    |
+| --------------------- | --------------------------------------- |
+| `streamlit`           | 前端 Web 框架                           |
+| `langchain`           | Agent / Chain / Tool 框架               |
+| `langchain-core`      | LangChain 核心抽象                      |
+| `langchain-community` | 通义千问、DashScope Embedding 等集成    |
+| `langgraph`           | 基于图的 Agent 执行引擎（含 `Runtime`） |
+| `langchain-chroma`    | LangChain 与 Chroma 向量库集成          |
+| `chromadb`            | Chroma 向量数据库                       |
+| `dashscope`           | 阿里云 DashScope SDK（Embedding / LLM） |
+| `pypdf` / `pypdf2`    | PDF 文档加载                            |
+| `pyyaml`              | YAML 配置文件解析                       |
 
 ### 一键部署（推荐）
 
 ```bash
 python -m pip install -r requirements.txt
 ```
-
 
 ---
 
@@ -169,7 +170,7 @@ OPENAI_API_KEY="your_open_api_key"
 ```yaml
 # config/agent.yml
 external_data_path: data/external/records.csv
-gaodekey: 你的高德key!        # ← 替换这里
+gaodekey: 你的高德key! # ← 替换这里
 gaode_base_url: https://restapi.amap.com
 gaode_timeout: 5
 ```
@@ -182,8 +183,8 @@ gaode_timeout: 5
 
 ```yaml
 # config/rag.yml
-chat_model_name: qwen3-max          # 对话大模型
-embedding_model_name: text-embedding-v4  # 向量化模型
+chat_model_name: qwen3-max # 对话大模型
+embedding_model_name: text-embedding-v4 # 向量化模型
 ```
 
 ### 4. 向量库配置
@@ -194,12 +195,12 @@ embedding_model_name: text-embedding-v4  # 向量化模型
 # config/chroma.yml
 collection_name: agent
 persist_directory: chroma_db
-k: 3                    # 检索返回的最相关文档数量
+k: 3 # 检索返回的最相关文档数量
 data_path: data
 md5_hex_store: md5.text
 allow_knowledge_file_type: ["txt", "pdf"]
-chunk_size: 200         # 文本分块大小
-chunk_overlap: 20       # 分块重叠长度
+chunk_size: 200 # 文本分块大小
+chunk_overlap: 20 # 分块重叠长度
 ```
 
 ---
@@ -275,14 +276,14 @@ Agent 会自动检测报告生成意图，切换到报告提示词，并调用�
 
 Agent 配备了以下 7 个工具：
 
-| 工具名 | 描述 |
-|--------|------|
-| `rag_summarize` | 从向量知识库中检索参考资料，回答产品相关问题 |
-| `get_weather` | 获取指定城市的实时天气（高德 API） |
-| `get_user_location` | 通过 IP 获取用户所在城市（高德 API） |
-| `get_user_id` | 获取当前用户 ID |
-| `get_current_month` | 获取当前月份 |
-| `fetch_external_data` | 从外部系统获取指定用户指定月份的使用记录 |
+| 工具名                    | 描述                                         |
+| ------------------------- | -------------------------------------------- |
+| `rag_summarize`           | 从向量知识库中检索参考资料，回答产品相关问题 |
+| `get_weather`             | 获取指定城市的实时天气（高德 API）           |
+| `get_user_location`       | 通过 IP 获取用户所在城市（高德 API）         |
+| `get_user_id`             | 获取当前用户 ID                              |
+| `get_current_month`       | 获取当前月份                                 |
+| `fetch_external_data`     | 从外部系统获取指定用户指定月份的使用记录     |
 | `fill_context_for_report` | 触发报告模式，通知中间件切换为报告生成提示词 |
 
 ---
@@ -317,6 +318,7 @@ logs/
 ```
 
 日志格式：
+
 ```
 2025-01-01 12:00:00,123 - agent - INFO - middleware.py:19 - [tool monitor]执行工具：get_weather
 ```
@@ -332,14 +334,14 @@ logs/
 
 **内置知识库文档：**
 
-| 文件 | 内容 |
-|------|------|
-| `扫地机器人100问.pdf` | 扫地机器人常见问题解答（PDF） |
-| `扫地机器人100问2.txt` | 扫地机器人补充问答 |
-| `扫拖一体机器人100问.txt` | 扫拖一体机器人常见问题解答 |
-| `故障排除.txt` | 故障排除指南 |
-| `维护保养.txt` | 日常维护保养说明 |
-| `选购指南.txt` | 购买建议与选型指南 |
+| 文件                      | 内容                          |
+| ------------------------- | ----------------------------- |
+| `扫地机器人100问.pdf`     | 扫地机器人常见问题解答（PDF） |
+| `扫地机器人100问2.txt`    | 扫地机器人补充问答            |
+| `扫拖一体机器人100问.txt` | 扫拖一体机器人常见问题解答    |
+| `故障排除.txt`            | 故障排除指南                  |
+| `维护保养.txt`            | 日常维护保养说明              |
+| `选购指南.txt`            | 购买建议与选型指南            |
 
 如需扩展知识库，只需将新的 `.txt` 或 `.pdf` 文件放入 `data/` 目录，重启服务后会自动加载。
 
