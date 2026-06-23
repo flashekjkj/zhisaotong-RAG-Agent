@@ -1,94 +1,57 @@
-# 智扫通RAG-Agent智能客服系统 🤖
-
-> 基于 LangChain ReAct Agent + RAG + Streamlit 的扫地机器人智能客服系统
-
-# 使用必看
-
-请务必安装好相关配置环境，其中config/agent.yml文件中的gaodekey需要改为实际申请的高德key(也可以根据个人需要更改为更加隐式的办法)
-
-## 📖 项目简介
-
-**智扫通机器人智能客服**是一款面向扫地机器人/扫拖一体机器人用户的 AI 智能体应用。系统以 Streamlit 构建轻量级前端网页，后端基于 LangChain 搭建 ReAct（Reasoning + Acting）Agent，整合以下核心能力：
-
-- **混合检索RAG问答**：采用 BM25关键词检索 + 向量检索 + BGE-Rerank 语义重排 三阶检索方案，解决传统单向量召回不准、关键词匹配缺失的问题，针对扫地机器人知识库实现高精准问答，支持故障排查、使用教程、常见问题咨询。
-- **高德 MCP 服务**：调用高德地图 API 实时获取用户定位与天气信息。
-- **总结汇报模式**：中间件通过识别特定意图，动态切换系统提示词，自动生成使用情况报告（Markdown 格式）。
-- **多轮工具调用**：Agent可自主规划并多轮调用所配备的工具，直至满足用户需求。
-- **前后端分离架构**：使用FastAPI封装核心能力为标准RESTful接口，前端Streamlit独立负责交互，实现服务解耦、跨端复用，同时解决进程隔离、上下文传递等工程问题。
-- **完善的日志与历史**：配备结构化日志（文件 + 控制台）与对话历史记录。支持加载选择和删除历史对话。
+# 智扫通机器人智能客服系统 🤖
 
 ---
+## 📖 项目简介
 
-## 🏗 系统架构
+**智扫通**是面向扫地机器人、扫拖一体机器人用户的轻量化AI智能体客服系统。项目基于Streamlit搭建可视化前端，依托LangChain+LangGraph构建自主决策ReAct智能体，包含以下功能：
 
-```
-┌──────────────────────────────────────────────┐
-│          Streamlit 前端 (app.py)              │
-│  - 对话历史  - 流式显示  - 会话状态管理        │
-└──────────────────────┬───────────────────────┘
-                       │
-┌──────────────────────▼───────────────────────┐
-│        ReAct Agent (agent/react_agent.py)     │
-│  ┌─────────────────────────────────────────┐ │
-│  │  中间件层 (middleware.py)                │ │
-│  │  ├─ monitor_tool   工具调用监控与日志    │ │
-│  │  ├─ log_before_model  模型调用前日志     │ │
-│  │  └─ report_prompt_switch 动态提示词切换  │ │
-│  └─────────────────────────────────────────┘ │
-│  工具集：rag_summarize / get_weather /        │
-│         get_user_location / get_user_id /     │
-│         get_current_month / fetch_external_data│
-│         fill_context_for_report               │
-└──┬──────────────┬───────────────┬────────────┘
-   │              │               │
-   ▼              ▼               ▼
-┌──────────┐ ┌─────────────┐ ┌────────────────┐
-│ RAG 服务 │ │  高德 API   │ │  外部 CSV 数据 │
-│(rag/)    │ │ 天气 / 定位 │ │ data/external/ │
-└────┬─────┘ └─────────────┘ └────────────────┘
-     │
-┌────▼─────────────────────────┐
-│  Chroma 向量数据库 (chroma_db/)│
-│  Embedding: text-embedding-v4 │
-│  知识库文档 (data/)           │
-│  ├─ PDF / TXT 文档            │
-│  └─ chunk_size=200, k=3       │
-└──────────────────────────────┘
-```
+- **混合检索RAG问答**：融合BM25关键词检索、Chroma向量检索、BGE-Rerank语义重排，解决传统单向量召回精准度低、关键词漏匹配问题，依托专属知识库，支持机器人故障排查、使用教程、日常保养、常见问题全场景咨询。
+- **多模态故障识别**：具有图片识别能力，支持上传机器人故障实拍图，智能分析硬件异常、故障原因，输出对应解决方案。
+- **高德服务**：调用高德地图官方API，实时获取用户IP定位、本地天气信息。
+- **报告生成**：内置意图识别机制，自动切换专属报告提示词，读取用户使用数据，一键生成Markdown格式的机器人使用分析、保养建议报告。
+- **自主多轮工具调用**：Agent可自主规划并多轮调用所配备的工具，直至满足用户需求。
+- **前后端分离架构**：使用FastAPI封装核心能力为标准RESTful接口，前端Streamlit独立负责交互，实现服务解耦、跨端复用，同时解决进程隔离、上下文传递等工程问题。
+- **完整会话管理体系**：历史会话持久化，支持对话记录保存、加载、删除，实现多轮连贯对话，上下文记忆不丢失。
+- **完善的日志与历史**：配备结构化日志（文件 + 控制台）与对话历史记录。支持加载选择和删除历史对话。
 
 ---
 
 ## 📂 目录结构
 
 ```
-zhisaotong-Agent/
-├── app.py                        # Streamlit 前端入口
-├── agent/
-│   ├── react_agent.py            # ReAct Agent 核心逻辑
+zhisaotong-RAG-Agent/
+├── app.py                        # Streamlit 前端启动入口
+├── app_copy.py                   # 项目初始化备份文件
+├── test.py                       # 功能测试脚本（含图片识别测试）
+├── chat_sessions.json            # 历史对话持久化存储文件
+├── md5.text                      # 知识库文档MD5去重记录
+├── requirements.txt              # 项目依赖清单
+├── agent/                        # Agent智能体核心模块
+│   ├── react_agent.py            # ReAct智能体主逻辑
 │   └── tools/
-│       ├── agent_tools.py        # 工具函数定义
-│       └── middleware.py         # Agent 中间件
-├── rag/
-│   ├── rag_service.py            # RAG 检索摘要服务
-│   └── vector_store.py           # Chroma 向量库管理
-├── model/
-│   └── factory.py                # 模型工厂（LLM + Embedding）
-├── utils/
-│   ├── config_handler.py         # YAML 配置加载器
-│   ├── logger_handler.py         # 日志工具
-│   ├── prompt_loader.py          # 提示词加载器
-│   ├── file_handler.py           # 文档加载（PDF/TXT）
-│   └── path_tool.py              # 路径工具
-├── config/
-│   ├── agent.yml                 # Agent 配置（高德 API Key 等）
-│   ├── rag.yml                   # 模型名称配置
-│   ├── chroma.yml                # 向量库配置
-│   └── prompts.yml               # 提示词文件路径
-├── prompts/
-│   ├── main_prompt.txt           # 主 ReAct 提示词
-│   ├── rag_summarize.txt         # RAG 摘要提示词
-│   └── report_prompt.txt         # 报告生成提示词
-├── data/
+│       ├── agent_tools.py        # 全部工具函数定义
+│       └── middleware.py         # 智能体中间件（日志、提示词切换）
+├── rag/                          # RAG检索核心模块
+│   ├── rag_service.py            # 检索、摘要生成服务
+│   └── vector_store.py           # Chroma向量库初始化与管理
+├── model/                        # 模型调度模块
+│   └── factory.py                # LLM、Embedding模型工厂
+├── utils/                        # 通用工具模块
+│   ├── config_handler.py         # YAML配置文件加载器
+│   ├── logger_handler.py         # 结构化日志工具
+│   ├── prompt_loader.py          # 提示词文件加载工具
+│   ├── file_handler.py           # PDF/TXT文档解析工具
+│   └── path_tool.py              # 项目路径统一管理工具
+├── config/                       # 全局配置文件
+│   ├── agent.yml                 # 高德API、外部数据路径配置
+│   ├── rag.yml                   # 大模型、向量模型配置
+│   ├── chroma.yml                # 向量库、检索参数配置
+│   └── prompts.yml               # 提示词文件路径配置
+├── prompts/                      # 系统提示词模板
+│   ├── main_prompt.txt           # 通用对话ReAct提示词
+│   ├── rag_summarize.txt         # RAG检索摘要提示词
+│   └── report_prompt.txt         # 专属报告生成提示词
+├── data/                         # 行业知识库+用户数据
 │   ├── 扫地机器人100问.pdf
 │   ├── 扫地机器人100问2.txt
 │   ├── 扫拖一体机器人100问.txt
@@ -96,10 +59,10 @@ zhisaotong-Agent/
 │   ├── 维护保养.txt
 │   ├── 选购指南.txt
 │   └── external/
-│       └── records.csv           # 用户使用记录（外部数据）
-├── chroma_db/                    # Chroma 持久化目录（自动生成）
-├── logs/                         # 日志文件目录（自动生成）
-└── md5.text                      # 文档 MD5 去重记录
+│       └── records.csv           # 用户设备使用记录数据
+├── chroma_db/                    # 向量库持久化存储目录（自动生成）
+├── logs/                         # 项目日志存储目录（自动生成）
+└── uploads/                      # 用户上传图片、文件存储目录（自动生成）
 ```
 
 ---
@@ -108,24 +71,24 @@ zhisaotong-Agent/
 
 ### Python 版本
 
-建议使用 **Python 3.10+**（代码中使用了 `tuple[str, str]` 等 3.10+ 类型注解语法）。
+建议使用 **Python 3.10+**。
 
 ### 主要依赖包
 
-| 包名                  | 用途                                    |
-| --------------------- | --------------------------------------- |
-| `streamlit`           | 前端 Web 框架                           |
-| `langchain`           | Agent / Chain / Tool 框架               |
-| `langchain-core`      | LangChain 核心抽象                      |
-| `langchain-community` | 通义千问、DashScope Embedding 等集成    |
-| `langgraph`           | 基于图的 Agent 执行引擎（含 `Runtime`） |
-| `langchain-chroma`    | LangChain 与 Chroma 向量库集成          |
-| `chromadb`            | Chroma 向量数据库                       |
-| `dashscope`           | 阿里云 DashScope SDK（Embedding / LLM） |
-| `pypdf` / `pypdf2`    | PDF 文档加载                            |
-| `pyyaml`              | YAML 配置文件解析                       |
+| 包名                  | 用途                                    
+| --------------------- | --------------------------------------- 
+| `streamlit`           | 前端 Web 框架                           
+| `langchain`           | Agent / Chain / Tool 框架               
+| `langchain-core`      | LangChain 核心抽象                      
+| `langchain-community` | 通义千问、DashScope Embedding 等集成    
+| `langgraph`           | 基于图的 Agent 执行引擎（含 `Runtime`） 
+| `langchain-chroma`    | LangChain 与 Chroma 向量库集成          
+| `chromadb`            | Chroma 向量数据库                       
+| `dashscope`           | 阿里云 DashScope SDK（Embedding / LLM） 
+| `pypdf` / `pypdf2`    | PDF 文档加载                            
+| `pyyaml`              | YAML 配置文件解析                       
 
-### 一键部署（推荐）
+### 一键安装依赖
 
 ```bash
 python -m pip install -r requirements.txt
@@ -143,7 +106,7 @@ python -m pip install -r requirements.txt
 OPENAI_API_KEY="your_open_api_key"
 ```
 
-> 可在 [阿里云百炼平台](https://bailian.console.aliyun.com/) 获取 API Key。
+可在 [阿里云百炼平台](https://bailian.console.aliyun.com/) 获取 API Key。
 
 ### 2. 高德地图 API Key
 
@@ -157,7 +120,7 @@ gaode_base_url: https://restapi.amap.com
 gaode_timeout: 5
 ```
 
-> 可在 [高德开放平台](https://console.amap.com/) 申请 Web 服务类型的 API Key。
+可在 [高德开放平台](https://console.amap.com/) 申请 Web 服务类型的 API Key。
 
 ### 3. 模型配置
 
@@ -341,5 +304,4 @@ logs/
 
 ## 📄 许可证
 
-本项目在https://github.com/bamboo-moon/zhisaotong-Agent基础上修改，仅供学习与参考使用。
-感谢黑马程序员开源免费项目、阿里云和高德地图等开放平台。
+感谢黑马程序员开源免费项目、阿里云和高德地图等开放平台。项目仅供学习与参考使用。
